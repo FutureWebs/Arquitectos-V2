@@ -1,0 +1,230 @@
+/* --- BACKDROP (Fondo oscuro) --- */
+.sidenav-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--color-scrim);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
+  z-index: 998;
+  opacity: 0;
+  pointer-events: none; /* Bloquea clics cuando está cerrado */
+  transition: opacity 0.35s var(--ease-out);
+}
+
+/* Cuando se abre, se muestra el fondo */
+.sidenav-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* --- PANEL DESLIZANTE (patrón del showroom) --- */
+.sidenav-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: min(21rem, 88vw);
+  height: 100vh;
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(var(--blur-lg));
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+  border-right: 1px solid var(--color-border);
+  box-shadow: var(--glass-shadow);
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+
+  /* Estado cerrado por defecto (fuera de la pantalla a la izquierda) */
+  transform: translateX(-105%);
+  visibility: hidden;
+  transition: transform var(--duration) var(--ease-out), visibility 0s linear var(--duration);
+}
+
+/* Cuando está abierto, se desliza a su posición original */
+.sidenav-container.open {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform var(--duration) var(--ease-out), visibility 0s linear 0s;
+}
+
+/* Glow dorado en la esquina superior derecha (patrón del showroom) */
+.sidenav-container::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8rem;
+  height: 8rem;
+  content: "";
+  background: radial-gradient(circle at top right, var(--color-gold-glow), transparent 70%);
+  pointer-events: none;
+}
+
+/* --- CABECERA: proyecto + lugar --- */
+.sidenav-head {
+  position: relative;
+  padding: 2rem 1.5rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sidenav-project {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+}
+
+.sidenav-place {
+  margin: var(--space-1) 0 0;
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: var(--color-text-muted);
+}
+
+/* --- NAVEGACIÓN --- */
+.sidenav-nav {
+  flex: 1;
+  min-height: 0; /* permite scroll en alturas cortas (mobile landscape) */
+  padding: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.sidenav-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.sidenav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-item {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+  text-align: left;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--duration-fast), transform var(--duration-fast);
+}
+
+.nav-item svg {
+  flex: none;
+  color: var(--color-accent-text);
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.nav-chevron {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.nav-chevron.flipped {
+  transform: rotate(180deg);
+}
+
+.nav-item:hover {
+  background: var(--color-gold-soft);
+  transform: translateX(3px);
+}
+
+/* Item activo (estado actual) */
+.nav-item.current,
+.nav-item.current:hover {
+  font-weight: 400;
+  color: var(--color-on-gold);
+  background: var(--gradient-gold);
+  box-shadow: var(--shadow-gold);
+  transform: none;
+}
+
+.nav-item.current svg {
+  color: var(--color-on-gold);
+}
+
+.nav-label {
+  flex: 1;
+}
+
+/* --- SUBMENÚ (desplegable) --- */
+.nav-children {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--space-1) 0 var(--space-2) var(--space-6);
+  padding-left: var(--space-3);
+  border-left: 1px solid var(--color-gold-line);
+  list-style: none;
+}
+
+.nav-child {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: var(--color-text-muted);
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color var(--duration-fast), background var(--duration-fast);
+}
+
+.nav-child:hover {
+  color: var(--color-text);
+  background: var(--color-gold-soft);
+}
+
+/* --- PIE: regla decorativa + copyright --- */
+.sidenav-foot {
+  padding: var(--space-5) var(--space-6);
+  font-size: 0.75rem;
+  color: var(--color-text-subtle);
+  text-align: center;
+  letter-spacing: 0.08em;
+  border-top: 1px solid var(--color-border);
+}
+
+.sidenav-foot p {
+  margin: var(--space-2) 0 0;
+}
+
+.sidenav-rule {
+  display: inline-flex;
+  gap: var(--space-2);
+  align-items: center;
+  color: var(--color-accent-icon);
+  font-size: 14px;
+}
+
+.sidenav-rule::before,
+.sidenav-rule::after {
+  width: 2rem;
+  height: 1px;
+  content: "";
+  background: var(--color-gold-line);
+}

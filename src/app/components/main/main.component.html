@@ -1,0 +1,168 @@
+<div class="video-container">
+
+  @if (isLoading()) {
+    <div class="loading-screen">
+      <div class="spinner"></div>
+      <p>{{ 'loading_experience' | translate }}</p>
+    </div>
+  }
+
+  <img [src]="currentPoster()"
+       class="poster-layer"
+       [class.hidden]="isVideoPlaying()"
+       alt="" />
+
+  <!-- Video de intro (inicial_web): primer plano de fondo en estado INICIO -->
+  @if (mostrarIntroVideo()) {
+    <video #introVideo
+           class="intro-video"
+           src="videos/inicial_web.mp4"
+           poster="fotos/intro.webp"
+           autoplay muted loop playsinline
+           (canplay)="onIntroCanPlay(introVideo)"
+           aria-hidden="true">
+    </video>
+  }
+
+  <video #mainVideo
+         class="background-video"
+         [class.inactive]="!isVideoPlaying()"
+         muted playsinline
+         [src]="currentVideoUrl()"
+         (timeupdate)="onVideoTimeUpdate()"
+         (ended)="onVideoEnded()">
+  </video>
+
+  <app-top-bar
+    [mostrarMenuBtn]="true"
+    [mostrarBackBtn]="estadoActual() !== 'INICIO'"
+    [mostrarFullscreenBtn]="true"
+    [mostrarActionBtns]="estadoActual() === 'NAVEGANDO_360'"
+    [isBlocked]="isAnimating()"
+    [isFullscreen]="isFullscreen()"
+    (menuClicked)="abrirMenuPrincipal()"
+    (backClicked)="volverAtras()"
+    (fullscreenToggled)="toggleFullscreen()"
+    (galleryClicked)="galeriaAbierta.set(true)">
+  </app-top-bar>
+
+  <!-- Reemplaza la línea (floorChanged)="pisoActual.set($event)" por esto: -->
+  @if (pisoActual()) {
+    <app-edificio-overlay
+      [isVisible]="mostrarOverlay()"
+      [floorData]="pisoActual()!"
+      [listaPisos]="edificioCompleto()"
+      [isFullscreen]="isFullscreen()"
+      (backPressed)="volverAtras()"
+      (toggleFullscreen)="toggleFullscreen()"
+      (floorChanged)="onFloorChanged($event)"
+      (apartmentSelected)="onDeptoClick($event)">
+    </app-edificio-overlay>
+  }
+
+  <!-- Zona clickeable del edificio: hover resalta el contorno, click entra al edificio -->
+  @if (mostrarZonaEntrada()) {
+    <div class="zona-entrada" [class.confirmado]="mobileConfirmado()">
+      <div class="zona-entrada__frame">
+        <svg viewBox="0 0 1920 1080" aria-hidden="true">
+          <g [attr.transform]="'translate(' + contornoEdificio().x + ',' + contornoEdificio().y + ')'">
+            <path [attr.d]="contornoEdificio().d"
+                  (click)="onEdificioClick()"
+                  (mouseenter)="zonaHover.set(true)"
+                  (mouseleave)="zonaHover.set(false)" />
+          </g>
+        </svg>
+      </div>
+      <div class="zona-hint-circle"
+           [class.hide]="zonaHover() || mobileConfirmado()"
+           (mouseenter)="zonaHover.set(true)"
+           (click)="onEdificioClick()"></div>
+      <div class="zona-entrada__label"
+           [class.visible]="zonaHover() || mobileConfirmado()"
+           (click)="onEdificioClick()"
+           (mouseenter)="zonaHover.set(true)"
+           (mouseleave)="zonaHover.set(false)">
+        {{ 'btn_enter' | translate }}
+      </div>
+    </div>
+  }
+
+  <div class="ui-layer" [class.ui-hidden]="isAnimating()">
+
+    <!-- Estado: INICIO con Branding Oficial -->
+    @if (estadoActual() === 'INICIO') {
+      <div class="top-center brand-hero-container">
+        <div class="hero-star-icon">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>
+          </svg>
+        </div>
+        <h1 class="hero-brand-title">CARDINALES</h1>
+        <div class="hero-brand-pill">ALTO PANORAMA</div>
+
+      </div>
+
+      <div class="center-overlay">
+        <button class="btn-premium" (click)="iniciarDescubrimiento()">
+          {{ 'btn_discover' | translate }}
+        </button>
+      </div>
+    }
+
+    <!-- Estado: NAVEGANDO_360 -->
+    @if (estadoActual() === 'NAVEGANDO_360') {
+      <button class="btn-nav btn-nav-side btn-nav-left" (click)="girarIzquierda()" aria-label="Izquierda">
+        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+
+      <button class="btn-nav btn-nav-side btn-nav-right" (click)="girarDerecha()" aria-label="Derecha">
+        <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    }
+  </div>
+
+<app-sidenav
+  [isOpen]="isSidenavOpen()"
+  [enInicio]="estadoActual() === 'INICIO'"
+  (closeSidenav)="isSidenavOpen.set(false)"
+  (inicioClicked)="onMenuInicio()"
+  (galleryClicked)="galeriaAbierta.set(true)"
+  (tourClicked)="tourAbierto.set(true)"
+  (videosClicked)="videosAbiertos.set(true)">
+</app-sidenav>
+
+<!-- Carrusel de renders (botón Galería del top-bar) -->
+<app-gallery-carousel
+  [isVisible]="galeriaAbierta()"
+  [imagenes]="imagenesRender"
+  (closed)="galeriaAbierta.set(false)">
+</app-gallery-carousel>
+
+<!-- Tour 360 (menú hamburguesa) -->
+<app-gallery-carousel
+  [isVisible]="tourAbierto()"
+  [imagenes]="imagenesTour360"
+  (closed)="tourAbierto.set(false)">
+</app-gallery-carousel>
+
+<!-- Videos (menú hamburguesa) -->
+<app-gallery-carousel
+  [isVisible]="videosAbiertos()"
+  [imagenes]="videosMenu"
+  modo="video"
+  (closed)="videosAbiertos.set(false)">
+</app-gallery-carousel>
+
+<!-- Recomendación de orientación (mobile): al llegar al top, gira el teléfono -->
+<div class="orientation-hint" [class.show]="recomendacionOrientacion()" (click)="recomendacionOrientacion.set(false)">
+  <svg class="orientation-hint__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="7.5" y="2.5" width="9" height="19" rx="2" />
+    <line x1="10.5" y1="18.5" x2="13.5" y2="18.5" />
+  </svg>
+  <h2 class="orientation-hint__title">{{ 'orientation_title' | translate }}</h2>
+  <p class="orientation-hint__text">{{ 'orientation_text' | translate }}</p>
+  <button class="orientation-hint__btn" (click)="recomendacionOrientacion.set(false)">
+    {{ 'orientation_ok' | translate }}
+  </button>
+</div>
+</div>

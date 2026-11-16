@@ -1,0 +1,221 @@
+/* --- CONTENEDOR OVERLAY PRINCIPAL --- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 40;
+
+  /* Permitimos scroll horizontal y ocultamos el vertical */
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.overlay::-webkit-scrollbar {
+  display: none;
+}
+
+/* --- CONTENEDOR ÚNICO (IMAGEN + SVG JUNTOS) --- */
+.canvas-container {
+  position: relative;
+  /* Por defecto para computadoras: se adapta al ancho (100% de la pantalla) */
+  width: 100vw;
+  height: auto;
+  aspect-ratio: 1920 / 1080;
+  flex-shrink: 0;
+  margin: auto;
+}
+
+@media (max-width: 1023px) {
+  .overlay {
+    justify-content: flex-start; /* Vital para que exista espacio de scroll a ambos lados */
+  }
+
+  .canvas-container {
+    height: 100vh;
+    width: auto;
+    aspect-ratio: 1920 / 1080;
+    margin: 0;
+    flex-shrink: 0;
+  }
+}
+/* Tanto la foto como el SVG ocupan exactamente el 100% de ese contenedor único */
+.bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill; /* Fuerza a que cubran exactamente las mismas dimensiones proporcionales */
+  display: block;
+}
+
+.interactive-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- POLÍGONOS DE LOS DEPARTAMENTOS (PATHS SVG) --- */
+.apto-path {
+  cursor: pointer;
+  fill: transparent;
+  stroke: rgba(255, 255, 255, 0.4);
+  stroke-width: 2;
+  transition: fill 0.25s ease, stroke 0.25s ease;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.apto-path:hover {
+  fill: rgba(0, 0, 0, 0.3);
+  stroke: rgba(255, 255, 255, 0.75);
+}
+
+.apto-path.vendido {
+  cursor: not-allowed;
+}
+
+/* --- BADGES Y PÍLDORAS FLOTANTES (sistema glass + oro) --- */
+.apto-badge {
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  transition: transform var(--duration-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.badge-container-bg {
+  fill: rgba(20, 24, 32, 0.88);
+  stroke: var(--color-gold-line);
+  stroke-width: 1.5;
+  transition: stroke 0.2s ease;
+}
+
+.apto-badge.disponible .status-dot { fill: var(--color-available); }
+.apto-badge.reservado .status-dot { fill: var(--color-reserved); }
+.apto-badge.vendido .status-dot { fill: var(--color-unavailable); }
+
+.badge-text {
+  fill: var(--color-accent-text);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-family, sans-serif);
+  letter-spacing: 0.02em;
+}
+
+/* Mobile landscape (>=16:9): el plano llena el ancho (recorte mínimo de
+   calles arriba/abajo), queda centrado y los badges crecen para leerse */
+@media (max-width: 1023px) and (min-aspect-ratio: 16/9) {
+  .overlay {
+    justify-content: center;
+  }
+
+  .canvas-container {
+    width: 100vw;
+    height: auto;
+    margin: 0;
+  }
+
+  .badge-text {
+    font-size: 15px;
+  }
+}
+
+.status-dot {
+  transition: fill 0.2s ease;
+}
+
+/* --- SELECTOR DE PISOS FLOTANTE DERECHO --- */
+.floor-selector {
+  position: fixed;
+  right: 20px;
+  margin-top: 60px;
+  transform: translateY(-50%);
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(var(--blur-md));
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  z-index: 100;
+  box-shadow: var(--glass-shadow);
+  scrollbar-width: none;
+  max-width: 48px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration) var(--ease-out);
+}
+
+.floor-selector.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.floor-selector::-webkit-scrollbar {
+  display: none;
+}
+
+.floors-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.floor-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--duration-fast), color var(--duration-fast), transform var(--duration-fast) var(--ease-out);
+  outline: none;
+}
+
+.floor-btn:hover {
+  background: var(--color-gold-soft);
+  color: var(--color-text);
+}
+
+.floor-btn.active {
+  background: var(--gradient-gold);
+  color: var(--color-on-gold);
+  font-weight: 600;
+  box-shadow: 0 0 12px var(--color-gold-glow);
+}
+
+@media (max-width: 767px) {
+  .floor-selector {
+    right: 12px;
+    padding: 6px;
+  }
+
+  .floor-btn {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    font-size: 12px;
+  }
+}
