@@ -46,6 +46,8 @@ export class MainComponent {
   isLoading = signal<boolean>(true);
   isVideoPlaying = signal<boolean>(false);
   isFullscreen = signal<boolean>(false);
+  /** El póster permanece visible (z-index) hasta que el video confirma frame compuesto */
+  posterOculto = signal<boolean>(false);
 
   // Obtenemos los pisos sincronizados desde el servicio (JSON + Firebase)
   edificioCompleto = this.buildingService.edificioPisos;
@@ -248,6 +250,7 @@ export class MainComponent {
     if (this.videoQueue.length === 0) {
       this.isAnimating.set(false);
       this.isVideoPlaying.set(false);
+      this.posterOculto.set(false);
       this.pasoEnReproduccion = null;
       return;
     }
@@ -257,6 +260,8 @@ export class MainComponent {
     this.targetPosterForEnd = `${this.pathFotos}${paso.poster}`;
 
     this.isVideoPlaying.set(false);
+    this.posterOculto.set(false);
+    this.revealToken++; // invalida rVFC pendientes del paso anterior
     this.esperandoInicioVideo = true;
 
     // 1) Esperamos la foto de destino (máx. 2s) ANTES de arrancar el video.
@@ -308,26 +313,46 @@ export class MainComponent {
 
     const videoNode = this.videoElement.nativeElement;
 
-    // 1. Si estamos esperando el inicio del video, quitamos el póster al primer fotograma
+    // 1. Revelado: el video pasa a visible, pero el póster sigue ENCIMA
+    //    (z-index) hasta que el browser confirma con requestVideoFrameCallback
+    //    que un frame ya fue compuesto → jamás se pinta el video en negro.
     if (this.esperandoInicioVideo && videoNode.currentTime > 0.05) {
       this.esperandoInicioVideo = false;
       this.isVideoPlaying.set(true);
+      this.revelarVideoCuandoPintado(videoNode);
       return;
     }
 
-    // 2. ANTICIPACIÓN AL FINAL: Si al video le quedan menos de 0.15 segundos para terminar,
-    // adelantamos la foto de cierre para que la transición sea totalmente invisible.
+    // 2. Puntero de la foto de destino: se cambia el src del <img> mientras
+    //    está oculto. El corte al final ocurre en onVideoEnded (sin
+    //    anticipación: el video se reproduce completo, sin perder continuidad).
     if (!this.esperandoInicioVideo && videoNode.duration && !videoNode.paused) {
       this.currentPoster.set(this.targetPosterForEnd);
-      const tiempoRestante = videoNode.duration - videoNode.currentTime;
-
-      if (tiempoRestante <= 0.15 && this.pasoEnReproduccion) {
-        // Fijamos la foto póster justo antes del corte
-
-        this.isVideoPlaying.set(false); // Oculta el video mostrando la foto abajo suavemente
-      }
     }
 
+  }
+
+  /**
+   * Mantiene el póster visible por encima del video recién revelado hasta que
+   * el browser confirma (requestVideoFrameCallback) que compuso un frame. Si el
+   * browser no lo soporta, retira el póster a los 150ms (sigue cubriendo el
+   * video mientras tanto).
+   */
+  private revelarVideoCuandoPintado(videoNode: HTMLVideoElement): void {
+    const token = ++this.revealToken;
+    const confirmar = () => {
+      if (token === this.revealToken) {
+        this.posterOculto.set(true);
+      }
+    };
+    const v = videoNode as HTMLVideoElement & {
+      requestVideoFrameCallback?: (cb: () => void) => number;
+    };
+    if (typeof v.requestVideoFrameCallback === 'function') {
+      v.requestVideoFrameCallback(confirmar);
+    } else {
+      setTimeout(confirmar, 150);
+    }
   }
   /*
   onVideoTimeUpdate() {
@@ -347,10 +372,12 @@ export class MainComponent {
 
   onVideoEnded() {
     if (this.pasoEnReproduccion) {
-      // ANTES de cambiar el estado, fijamos la foto póster actual para que
-      // tape el video justo en el fotograma final exacto.
+      // Corte final seco en el frame exacto: la foto de destino ya estaba
+      // cargada y apuntando desde el bloque 2, así que es un cambio de
+      // contenido casi imperceptible (el video termina en la misma escena).
       this.currentPoster.set(this.targetPosterForEnd);
-      this.isVideoPlaying.set(false); // Oculta el video instantáneamente mostrando la foto abajo
+      this.isVideoPlaying.set(false);
+      this.posterOculto.set(false);
       this.estadoActual.set(this.pasoEnReproduccion.targetState);
     }
 
@@ -461,4 +488,5 @@ export class MainComponent {
   private esperandoInicioVideo = false;
   private videoQueue: VideoStep[] = [];
   private pasoEnReproduccion: VideoStep | null = null;
+  private revealToken = 0;
 }
